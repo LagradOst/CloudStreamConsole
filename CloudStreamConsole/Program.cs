@@ -20,16 +20,23 @@ namespace CloudStreamConsole
         static string searchedFor = "";
         static int autoC = -1;
         static int autoE = -1;
-        static bool autoVlc = false;
+        static int autoVlc = -1;
         static string[] quitCommands = { "-exit", "-quit", "-q", "-e" };
-        static string helpCommand = "-help";
-        static string helpResult = 
-@"movie, tv, anime [PREFIX, only searches from one provider]
+        static string[] helpCommands = { "-help", "-h" };
+        static string helpResult =
+@"movie, tv, anime [PREFIX, only searches from one provider] 
 [SEARCH FOR] 
 -c [NUMBER, autoselects a searchresult] 
 -e [NUMBER, autoselects an episode] 
 -l [NONE, autoselects the latest episode], 
--vlc [NONE, autolaunch vlc with link]";
+-vlc [NONE, autolaunch vlc with link]
+-mpv [NONE, autolaunch mpv with link] (Linux Only)
+
+Example: [ movie iron man -c 8 -vlc ] Launches iron man with vlc
+Example: [ anime death note -c 2 -e 1 -mpv ] Launches first episode of death note with mpv
+Example: [ the orville -c 2 -l ] Loads the links for the latest episode of the orville 
+Example: [ movie iron man -vlc ] Autoplays a movie with vlc when you select the movie
+";
 
         static void Main(string[] arg)
         {
@@ -52,82 +59,96 @@ namespace CloudStreamConsole
 
             while (true) {
                 string searchFor = totalArg == "" ? Console.ReadLine() : totalArg;
+                bool skip = false;
                 for (int i = 0; i < quitCommands.Length; i++) {
                     if (searchFor == quitCommands[i]) {
                         Environment.Exit(0);
                     }
                 }
-                if(searchFor == helpCommand) {
-                    Console.WriteLine(helpResult);
-                    continue;
-                }
-                searchedFor = searchFor.ToLower();
-                // tv the orville -s 2 -l
-
-                string[] pre = { "movie", "tv", "anime" };
-
-                int[] res = { 0, 8, 1 };
-                //int[] res = { -1, 4, 2 };
-                for (int i = 0; i < c.settingsSearch.Length; i++) {
-                    c.settingsSearch[i] = false;
-                }
-                bool any = false;
-                for (int i = 0; i < pre.Length; i++) {
-                    if (searchedFor.StartsWith(pre[i])) {
-                        c.settingsSearch[res[i]] = true;
-                        any = true;
-                        searchedFor = searchedFor.Replace(pre[i] + " ", "");
+                for (int i = 0; i < helpCommands.Length; i++) {
+                    if (searchFor.Contains(helpCommands[i])) {
+                        if (!skip) {
+                            Console.WriteLine(helpResult);
+                            skip = true;
+                        }
                     }
                 }
+                if (!skip) {
 
-                autoC = -1;
-                autoE = -1;
 
-                if (searchedFor.Contains("-c ")) {
-                    string chosen = c.FindHTML(searchedFor, "-c ", " ");
-                    if (chosen == "") {
-                        chosen = searchedFor.Substring(searchedFor.IndexOf("-c") + 3, searchedFor.Length - searchedFor.IndexOf("-c") - 3);
-                    }
-                    try {
-                        autoC = int.Parse(chosen);
-                    }
-                    catch (Exception) {
+                    searchedFor = searchFor.ToLower();
+                    // tv the orville -s 2 -l
 
-                    }
-                    searchedFor = searchedFor.Replace("-c " + chosen, "");
-                }
-                if (searchedFor.Contains("-l")) {
-                    autoE = -2;
-                    searchedFor = searchedFor.Replace("-l", "");
+                    string[] pre = { "movie", "tv", "anime" };
 
-                }
-                if (searchedFor.Contains("-e ")) {
-                    string chosen = c.FindHTML(searchedFor, "-e ", " ");
-                    if (chosen == "") {
-                        chosen = searchedFor.Substring(searchedFor.IndexOf("-e") + 3, searchedFor.Length - searchedFor.IndexOf("-e") - 3);
-                    }
-                    try {
-                        autoE = int.Parse(chosen);
-                    }
-                    catch (Exception) {
-
-                    }
-                    searchedFor = searchedFor.Replace("-e " + chosen, "");
-                }
-
-                if (!any) {
+                    int[] res = { 0, 8, 1 };
+                    //int[] res = { -1, 4, 2 };
                     for (int i = 0; i < c.settingsSearch.Length; i++) {
-                        c.settingsSearch[i] = true;
+                        c.settingsSearch[i] = false;
                     }
-                }
-                autoVlc = false;
-                if (searchedFor.Contains("-vlc")) {
-                    searchedFor = searchedFor.Replace("-vlc", "");
-                    autoVlc = true;
-                }
+                    bool any = false;
+                    for (int i = 0; i < pre.Length; i++) {
+                        if (searchedFor.StartsWith(pre[i])) {
+                            c.settingsSearch[res[i]] = true;
+                            any = true;
+                            searchedFor = searchedFor.Replace(pre[i] + " ", "");
+                        }
+                    }
+
+                    autoC = -1;
+                    autoE = -1;
+
+                    if (searchedFor.Contains("-c ")) {
+                        string chosen = c.FindHTML(searchedFor, "-c ", " ");
+                        if (chosen == "") {
+                            chosen = searchedFor.Substring(searchedFor.IndexOf("-c") + 3, searchedFor.Length - searchedFor.IndexOf("-c") - 3);
+                        }
+                        try {
+                            autoC = int.Parse(chosen);
+                        }
+                        catch (Exception) {
+
+                        }
+                        searchedFor = searchedFor.Replace("-c " + chosen, "");
+                    }
+                    if (searchedFor.Contains("-l")) {
+                        autoE = -2;
+                        searchedFor = searchedFor.Replace("-l", "");
+
+                    }
+                    if (searchedFor.Contains("-e ")) {
+                        string chosen = c.FindHTML(searchedFor, "-e ", " ");
+                        if (chosen == "") {
+                            chosen = searchedFor.Substring(searchedFor.IndexOf("-e") + 3, searchedFor.Length - searchedFor.IndexOf("-e") - 3);
+                        }
+                        try {
+                            autoE = int.Parse(chosen);
+                        }
+                        catch (Exception) {
+
+                        }
+                        searchedFor = searchedFor.Replace("-e " + chosen, "");
+                    }
+
+                    if (!any) {
+                        for (int i = 0; i < c.settingsSearch.Length; i++) {
+                            c.settingsSearch[i] = true;
+                        }
+                    }
+                    autoVlc = -1;
+                    if (searchedFor.Contains("-mpv")) {
+                        searchedFor = searchedFor.Replace("-mpv", "");
+                        autoVlc = 2;
+                    }
+                    if (searchedFor.Contains("-vlc")) {
+                        searchedFor = searchedFor.Replace("-vlc", "");
+                        autoVlc = 1;
+                    }
 
 
-                c.Search(searchedFor);
+                    c.Search(searchedFor);
+
+                }
                 if (totalArg != "") {
                     break;
                 }
@@ -152,7 +173,14 @@ namespace CloudStreamConsole
                     Console.WriteLine(c.activeLinksNames[newLink] + " | " + c.activeLinks[newLink]);
                 }
                 else {
-                    Console.WriteLine(c.activeLinks[newLink]);
+                    if (c.movieProvider[c.moveSelectedID] == 4 && c.activeLinksNames[newLink].StartsWith("Episode ")) {
+                        Console.WriteLine(c.activeLinksNames[newLink] + " | " + c.activeLinks[newLink]);
+
+                    }
+                    else {
+
+                        Console.WriteLine(c.activeLinks[newLink]);
+                    }
                 }
                 Console.WriteLine("");
             }
@@ -181,7 +209,7 @@ namespace CloudStreamConsole
                 }
             }
 
-            if (autoVlc && c.activeLinks.Count > 0) {
+            if (autoVlc != -1 && c.activeLinks.Count > 0) {
                 if (c.movieProvider[c.moveSelectedID] != 4 && c.movieProvider[c.moveSelectedID] != -1) {
                     PlayVLC(c.activeLinks[0]);
                 }
@@ -204,18 +232,42 @@ namespace CloudStreamConsole
 
         static void PlayVLC(string inp)
         {
-            System.Diagnostics.Process VLC = new System.Diagnostics.Process();
-            VLC.StartInfo.FileName = "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe";
-            VLC.StartInfo.Arguments = "-vvv " + inp;
-            try {
-                VLC.Start();
+            if (System.Environment.OSVersion.Platform == PlatformID.Win32NT || System.Environment.OSVersion.Platform == PlatformID.Win32Windows) {
+                if (autoVlc == 1) {
+                    System.Diagnostics.Process VLC = new System.Diagnostics.Process();
+                    VLC.StartInfo.FileName = "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe";
+                    VLC.StartInfo.Arguments = "-vvv " + inp;
+                    try {
+                        VLC.Start();
+                    }
+                    catch (Exception) {
+
+
+                    }
+                }
             }
-            catch (Exception) {
-
-
+            else if (System.Environment.OSVersion.Platform == PlatformID.Unix) {
+                try {
+                    ExecuteCommand((autoVlc == 1 ? "vlc" : "mpv") + " \"" + inp + "\"");
+                }
+                catch (Exception) {
+                }
             }
         }
 
+        public static void ExecuteCommand(string command)
+        {
+            System.Diagnostics.Process proc = new System.Diagnostics.Process();
+            proc.StartInfo.FileName = "/bin/bash";
+            proc.StartInfo.Arguments = "-c \" " + command + " \"";
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.Start();
+
+            while (!proc.StandardOutput.EndOfStream) {
+                Console.WriteLine(proc.StandardOutput.ReadLine());
+            }
+        }
 
         static int GetInt(int max, int min = 0)
         {
@@ -821,7 +873,7 @@ namespace CloudStreamConsole
                         print("-------------------- HD --------------------");
                         string url = tempTitle + GetgogoByFile(d);
                         print(url);
-                        if (!activeLinks.Contains(url) && !url.EndsWith(".viduplayer.com/urlset/v.mp4")) {
+                        if (!activeLinks.Contains(url) && (!url.EndsWith(".viduplayer.com/urlset/v.mp4") && !url.EndsWith(".viduplayer.com/vplayer/v.mp4")) ) {
                             activeLinks.Add(url);
                             activeLinksNames.Add("HD Viduplayer");
                         }
@@ -1389,6 +1441,7 @@ namespace CloudStreamConsole
             int addToTitleEps = 0;
             string tempThred = tNum.ToString();
             int ccThrednum = int.Parse(tempThred);
+            moveSelectedID = titleID;
 
             string inter = thredNumber.ToString();
             int cThred = int.Parse(inter);
